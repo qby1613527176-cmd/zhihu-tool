@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import random
 import re
 import time
@@ -20,8 +21,10 @@ TOOL_DIR = Path(__file__).resolve().parent
 PROFILE_DIR = TOOL_DIR / ".profile"          # 持久化浏览器档案(cookie/登录态)
 CHROME = "/usr/bin/google-chrome"
 
+# Chrome 大版本可用环境变量 ZHIHU_CHROME_VERSION 覆盖(防指纹漂移,与 zhihu_fast.py 同源)
+_UA_VER = os.environ.get("ZHIHU_CHROME_VERSION", "150")
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36")
+      f"(KHTML, like Gecko) Chrome/{_UA_VER}.0.0.0 Safari/537.36")
 
 STEALTH_JS = """
 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});

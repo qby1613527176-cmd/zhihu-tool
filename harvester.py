@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS state(
   PRIMARY KEY(qid, k));
 """
 
-INITIAL = "/api/v4/questions/{qid}/feeds?limit={limit}&offset=0&order=default&platform=desktop"
+INITIAL = ("/api/v4/questions/{qid}/feeds?limit={limit}&offset=0&order=default"
+           "&platform=desktop&include=content")  # include=content: feeds 直接带全文(2026-11-09 沙盒实测)
 
 
 def _path_q(url: str) -> str:

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import random
 import sys
 import time
@@ -146,9 +147,11 @@ class FastClient:
                  min_interval: float = 4.0, ua: str | None = None):
         self.cookies: dict[str, str] = json.loads(cookies_file.read_text())
         # __zse_ck 与 UA 绑定(R3 实锤)——默认用浏览器会话的 UA
+        # Chrome 大版本可用环境变量 ZHIHU_CHROME_VERSION 覆盖(防指纹漂移)
+        _ver = os.environ.get("ZHIHU_CHROME_VERSION", "150")
         self.ua = ua or ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                          "AppleWebKit/537.36 (KHTML, like Gecko) "
-                         "Chrome/150.0.0.0 Safari/537.36")
+                         f"Chrome/{_ver}.0.0.0 Safari/537.36")
         self.min_interval = min_interval
         self._last = 0.0
         self._client = httpx.Client(
@@ -219,8 +222,9 @@ class FastClient:
         """匿名自举: 零浏览器从零铸 cookie 罐(d_c0 预热 + 纯算 __zse_ck)。
         手机容器免 PC 的入口。匿名层级=问题元数据/少量回答/用户信息;
         深翻页/搜索仍需登录态(PC 扫码导出 cookies.json)。"""
+        _ver = os.environ.get("ZHIHU_CHROME_VERSION", "150")
         ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-              "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36")
+              f"(KHTML, like Gecko) Chrome/{_ver}.0.0.0 Safari/537.36")
         if verbose:
             print("[bootstrap] 预热 d_c0…", file=sys.stderr)
         dc0 = _warmup_dc0(ua)
@@ -391,10 +395,21 @@ def _zseck_mint(verbose: bool = False) -> str:
 
 
 def _warmup_dc0(ua: str) -> str:
-    """匿名预热拿 d_c0"""
+    """匿名预热拿 d_c0。2026-11 风控升级: GET /explore 已 302 不种 cookie,
+    降级 POST /udid(实测稳定种 d_c0)。都失败才抛错。"""
     r = httpx.get("https://www.zhihu.com/explore",
                   headers={"User-Agent": ua}, follow_redirects=False, timeout=30)
     dc0 = r.cookies.get("d_c0")
+    if dc0:
+        return dc0
+    try:
+        r2 = httpx.post("https://www.zhihu.com/udid",
+                        headers={"User-Agent": ua,
+                                 "Referer": "https://www.zhihu.com/explore"},
+                        timeout=30)
+        dc0 = r2.cookies.get("d_c0")
+    except Exception:
+        dc0 = None
     if not dc0:
         raise ZhihuFastBlocked("warmup 未拿到 d_c0")
     return dc0

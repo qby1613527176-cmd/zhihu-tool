@@ -2,6 +2,11 @@
 
 > 2026-11-05 建成。解决 2026-07-17 Firecrawl 被 zse_ck 挑战挡住的历史遗留问题。
 
+> ⚠️ **风控状态公告（2026-11-09 沙盒实测）**：知乎 11 月风控升级——匿名纯算通道**暂时失效**：
+> `GET /explore` 不再种 d_c0（已修复降级 POST /udid）、`__zse_ck` 铸造结果被 unhuman 标记、扫码 image 接口 40352。
+> **登录罐（PC 导出 cookies.json）完全不受影响，是当前唯一可靠通道**（无 __zse_ck 也全通）。
+> 匿名 bootstrap 代码保留待用；恢复信号由 canary.py 金丝雀监控。
+
 ## 原理（为什么不逆向签名）
 
 知乎的防线：
@@ -24,11 +29,17 @@
 | `mcp_server.py` | **MCP stdio 服务**：AI 代理直接调用（零依赖 JSON-RPC） |
 | `login.py` | 登录态获取：`qr` 扫码 或 `cookies` 导入 |
 | `vendor/py/` | zhihulite/zhihu_zse_ck 纯算铸 cookie 模块（保留原样，build 轮换免疫） |
-| `harvester.py` | 全量回答调度器（cursor 链翻页+断点续抓+自适应节流；实测 994/1528） |
-| `hydrate.py` | 回答全文补水（feeds 只回摘要;include=content 实测全文 10716 字;断点续补） |
+| `harvester.py` | 全量回答调度器（**纯 HTTP** FastClient；cursor 链翻页+断点续抓+自适应节流+**include=content 全文入库**；实测 994/1528） |
+| `corpus_hydrate.py` | 语料库全文补水（hydrated 标志位断点续补；目标集模式按优先级清单） |
 | `comment_harvester.py` | 回答评论批量收割（comment_v5 纯 HTTP 直打） |
 | `exporter.py` | 抓取结果 → Markdown 可读档案（HTML→MD 转换） |
 | `health.py` | 会话健康探针（z_c0/匿名罐分级告警+自愈） |
+
+## 配置
+
+| 环境变量 | 作用 | 默认 |
+|---|---|---|
+| `ZHIHU_CHROME_VERSION` | UA 的 Chrome 大版本号（zhihu.py / zhihu_fast.py 同源，防指纹漂移） | `150` |
 | `canary.py` | 风控姿态金丝雀（每日防御指纹+diff告警） |
 | `kb.py` | 抓取沉淀层（SQLite FTS5 中文二字组全文检索） |
 | `watch.py` | 行业情报监控（关键词快照+新增 diff，油茶试点） |
@@ -59,7 +70,7 @@ python3 harvester.py 19550225
 python3 canary.py run
 
 # 知识库(灌入+中文全文检索)
-python3 kb.py ingest && python3 kb.py search "山茶油"
+python3 kb.py ingest out_dir/ && python3 kb.py search "山茶油"   # ⚠️ ingest 参数是目录(默认 output/),不是单个文件
 
 # 情报监控(油茶关键词快照+新增diff)
 python3 watch.py run && python3 watch.py new

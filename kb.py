@@ -221,6 +221,28 @@ _QID_FROM_URL = re.compile(r"question/(\d+)")
 _EM_RE = re.compile(r"</?em>")
 
 
+def _norm_answer(a):
+    """归一化 fast 通道回答结构(feeds.data 的 target 包裹)为扁平 dict。
+    浏览器通道的扁平 answers 原样返回。"""
+    if isinstance(a, dict) and isinstance(a.get("target"), dict):
+        t = a["target"]
+        au = t.get("author") or {}
+        q = t.get("question") or {}
+        return {
+            "id": t.get("id"),
+            "author": au.get("name"), "author_token": au.get("url_token"),
+            "voteup_count": t.get("voteup_count"),
+            "comment_count": t.get("comment_count"),
+            "created": t.get("created_time") or t.get("created"),
+            "updated": t.get("updated_time") or t.get("updated"),
+            "content": t.get("content"), "excerpt": t.get("excerpt"),
+            "url": t.get("url") or (
+                f"https://www.zhihu.com/question/{q.get('id')}/answer/{t.get('id')}"
+                if t.get("id") and q.get("id") else None),
+        }
+    return a
+
+
 def _ingest_question(conn, d):
     q = d["question"]
     _upsert(conn, "questions", {
@@ -233,7 +255,11 @@ def _ingest_question(conn, d):
         "url": q.get("url"), "raw": json.dumps(q, ensure_ascii=False)})
     refresh_fts(conn, "question", str(q.get("id")))
     n = 1
-    for a in d.get("answers") or []:
+    answers = d.get("answers")
+    if not answers:
+        # fast 通道: {question, feeds:{data:[{target:{...}}]}}
+        answers = [_norm_answer(x) for x in (d.get("feeds") or {}).get("data") or []]
+    for a in answers:
         _ingest_answer(conn, a, question_id=str(q.get("id")))
         n += 1
     return n

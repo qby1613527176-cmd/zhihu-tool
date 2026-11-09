@@ -80,3 +80,11 @@ OpenClaw 注册：`mcp.servers` 加 `{ "command": "python3", "args": ["/path/zhi
 - 40362/429 → 自动指数退避（已内建）；验证码/跳登录 → 硬停（**不要**自动重试）
 - 手机流量 IP=住宅移动网络，天然优于机房 IP——但别因此提速
 - **新鲜匿名 d_c0 直打 API = 40362**（实测）：新设备无浏览历史就是机器人画像，必须先用带历史的 cookie 罐
+
+---
+
+## ⚠️ 2026-11-09 风控状态更新（沙盒实测）
+
+**匿名 bootstrap 当前不可用**：知乎 11 月升级——`__zse_ck` 铸造结果被 unhuman 标记、`GET /explore` 不再种 d_c0（已降级 POST /udid 修复）、扫码 image 接口 40352。
+
+**手机端当前唯一可靠路径**：PC 端 `login.py qr` 扫码导出 cookies.json → 拷贝到手机 → 快通道直接用（登录罐无需 __zse_ck）。匿名 bootstrap 代码保留，恢复信号由 canary 监控。
