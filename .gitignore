@@ -1,0 +1,21 @@
+# 账号与密钥(绝不入库)
+cookies.json
+cookies_*.json
+.profile/
+qr_login.png
+# 数据产物
+corpus/
+output/
+harvest.sqlite3
+watch.db
+canary/
+harvest_logs/
+*.jsonl
+!research/**/*.jsonl
+# 个人一次性脚本(不进发布)
+probe_*.py
+xuanxin_archive.py
+# Python
+__pycache__/
+*.pyc
+.venv/

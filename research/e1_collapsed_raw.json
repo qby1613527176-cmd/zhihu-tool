@@ -1,0 +1,14 @@
+{
+ "paging": {
+  "is_end": false,
+  "totals": 143,
+  "previous": "http://www.zhihu.com/api/v4/questions/19550225/collapsed-answers?limit=3&offset=0",
+  "is_start": true,
+  "next": "http://www.zhihu.com/api/v4/questions/19550225/collapsed-answers?limit=3&offset=3"
+ },
+ "data": [
+  null,
+  null,
+  null
+ ]
+}
