@@ -24,6 +24,7 @@ mcp_server.py — 知乎工具的 MCP(stdio) 服务层: 供 AI 代理直接调�
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -233,6 +234,9 @@ def _harvest_start(args: dict) -> str:
     收割线程 + /proc 僵尸判定,保证已退出的进程不被误判为在跑。"""
     qid = str(args["qid"])
     fresh = bool(args.get("fresh"))
+    if not re.fullmatch(r"[0-9]{1,20}", qid):
+        return json.dumps({"started": False, "reason": "bad_qid",
+                           "hint": "qid 必须是纯数字问题 ID"}, ensure_ascii=False)
     HARVEST_LOG_DIR.mkdir(exist_ok=True)
     pidfile = HARVEST_LOG_DIR / f"{qid}.pid"
     logfile = HARVEST_LOG_DIR / f"{qid}.log"
@@ -246,8 +250,8 @@ def _harvest_start(args: dict) -> str:
                 "started": False, "reason": "already_running",
                 "pid": old_pid, "qid": qid,
                 "hint": "用 zhihu_harvest_status 查进度"}, ensure_ascii=False)
-    if fresh:  # 清进度是快操作,同步做完再起
-        _run_cli(["harvester.py", qid, "--fresh"], timeout=30)
+    if fresh:  # --clear 是清完即退的快操作,同步做完再起后台任务
+        _run_cli(["harvester.py", qid, "--clear"], timeout=30)
     lf = open(logfile, "ab", buffering=0)
     try:
         p = subprocess.Popen(

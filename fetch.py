@@ -14,8 +14,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from zhihu import ZhihuSession, ZhihuBlocked, LoginRequired  # noqa: E402
 from zhihu_fast import FastClient, ZhihuFastBlocked  # noqa: E402
+
+
+def _browser():
+    """浏览器通道懒加载——仅 --fast 模式不需要 playwright(手机部署零依赖)"""
+    from zhihu import ZhihuSession, ZhihuBlocked, LoginRequired  # noqa: E402
+    return ZhihuSession, ZhihuBlocked, LoginRequired
 
 
 def _dump(data: dict, out: str | None):
@@ -91,6 +96,7 @@ async def main():
     if args.fast:
         fast_main(args)
         return
+    ZhihuSession, ZhihuBlocked, LoginRequired = _browser()  # 浏览器通道才加载 playwright
     try:
         async with ZhihuSession(headless=not args.headed,
                                 min_interval=args.interval) as zs:

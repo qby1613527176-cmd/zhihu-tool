@@ -292,11 +292,12 @@ def main():
                     help="基础间隔均值(秒), 下限 5.0")
     ap.add_argument("--max-requests", type=int, default=280)
     ap.add_argument("--fresh", action="store_true", help="清空该问题进度重抓")
+    ap.add_argument("--clear", action="store_true", help="只清空进度并退出(MCP 预调用)")
     ap.add_argument("--status", action="store_true", help="只看进度")
     args = ap.parse_args()
 
     db_path = Path(args.db)
-    if args.fresh:
+    if args.fresh or args.clear:
         conn = sqlite3.connect(str(db_path))
         conn.executescript(SCHEMA)
         conn.execute("DELETE FROM answers WHERE question_id=?", (args.qid,))
@@ -305,6 +306,8 @@ def main():
         conn.commit()
         conn.close()
         print(f"[fresh] 已清空 qid={args.qid} 的进度")
+        if args.clear:
+            return  # --clear: 清完即退,不启动抓取
     if args.status:
         conn = sqlite3.connect(str(db_path))
         conn.executescript(SCHEMA)
